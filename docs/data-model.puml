@@ -1,222 +1,288 @@
 @startuml
-title Enterprise Agentic AI Dispute Management - Canonical Data Model
+title CaseflowAI - Enterprise Agentic AI Dispute Management Canonical Data Model
 
 skinparam class {
     BackgroundColor #FFFDF0
-    BorderColor #A86438
-    ArrowColor #A86438
+    BorderColor #9E3D3D
+    ArrowColor #9E3D3D
 }
 
 class Case {
-    caseId: UUID
-    caseReference: String
-    disputeType: String
-    intakeChannel: String
-    disputeAmount: Decimal
-    currency: String
-    status: String
-    createdAt: DateTime
-    updatedAt: DateTime
-    closedDateTime: DateTime
+    +caseId: UUID
+    +caseReference: String
+    +channel: String
+    +countryCode: String
+    +submissionChannel: String
+    +currentStatus: String
+    +currentStage: String
+    +priority: String
+    +createdDateTime: DateTime
+    +closedDateTime: DateTime
 }
 
 class Customer {
-    customerId: UUID
-    externalId: String
-    customerType: String
-    fullName: String
-    email: String
-    phone: String
-    riskScore: Integer
+    +cifNo: String
+    +customerName: String
+    +customerType: String
+    +nricNo: String
+    +email: String
+    +mobileNo: String
 }
 
 class Address {
-    addressId: UUID
-    line1: String
-    city: String
-    postalCode: String
-    country: String
+    +addressLine1: String
+    +addressLine2: String
+    +postalCode: String
+    +country: String
 }
 
 class Card {
-    cardId: UUID
-    maskedPan: String
-    cardType: String
-    issuerBank: String
-    expiryDate: String
+    +cardId: UUID
+    +maskedPan: String
+    +cardScheme: String
+    +cardType: String
+    +productType: String
+    +accountType: String
+    +cardStatus: String
 }
 
 class Transaction {
-    transactionId: UUID
-    externalId: String
-    transactionDate: DateTime
-    postedDate: DateTime
-    transactionAmount: Decimal
-    currency: String
-    mcc: String
-    authorizationCode: String
-    isCardPresent: Boolean
-    recurringFlag: Boolean
+    +transactionId: String
+    +arn: String
+    +transactionDate: Date
+    +postingDate: Date
+    +transactionAmount: Decimal
+    +disputeAmount: Decimal
+    +currency: String
+    +mcc: String
+    +authorizationCode: String
+    +posMode: String
+    +transactionType: String
+    +recurringFlag: Boolean
 }
 
 class Merchant {
-    merchantId: String
-    merchantName: String
-    merchantCountry: String
-    merchantCategoryCode: String
-}
-
-class MerchantContact {
-    merchantId: UUID
-    disputeDeskContact: String
-    contactPhoneNumber: String
-    merchantCategory: String
+    +merchantId: String
+    +merchantName: String
+    +merchantCountry: String
+    +merchantCategoryCode: String
+    +riskRating: String
 }
 
 class Dispute {
-    disputeId: UUID
-    reasonCode: String
-    disputeStage: String
-    chargebackReasonCode: String
-    filedDateTime: DateTime
+    +disputeId: UUID
+    +disputeType: String
+    +natureOfDispute: String
+    +customerNarrative: String
+    +fraudType: String
+    +fraudReportingDate: Date
 }
 
 class DisputeStage {
-    stageId: UUID
-    stageName: String
-    enteredDateTime: DateTime
-    resolvedDateTime: DateTime
-}
-
-class WorkflowTask {
-    taskId: UUID
-    taskType: String
-    status: String
-    assignedAgentId: String
-    startedAt: DateTime
-    completedAt: DateTime
-}
-
-class StatusHistory {
-    historyId: UUID
-    oldStatus: String
-    newStatus: String
-    changedBy: String
-    changedDateTime: DateTime
-}
-
-class TimelineEvent {
-    eventId: UUID
-    eventType: String
-    eventDetail: String
-    eventDateTime: DateTime
-}
-
-class SecurityContext {
-    securityContextId: UUID
-    ipAddress: String
-    deviceId: String
-    vpnFlag: Boolean
-    riskScore: Integer
-}
-
-class Authentication {
-    authId: UUID
-    threeDSecureVersion: String
-    authStatus: String
-}
-
-class Location {
-    city: String
-    country: String
+    +stageId: UUID
+    +stageType: String
+    +status: String
+    +startDateTime: DateTime
+    +endDateTime: DateTime
 }
 
 class Evidence {
-    evidenceId: UUID
-    documentType: String
-    fileLocation: String
-    uploadedBy: String
-    uploadedDateTime: DateTime
+    +evidenceId: UUID
+    +documentId: String
+    +documentType: String
+    +stageType: String
+    +uploadedBy: String
+    +fileName: String
+    +documentUri: String
+    +uploadTime: DateTime
+    +verificationStatus: String
+}
+
+class DocumentAnalysis {
+    +analysisId: UUID
+    +validationScore: Decimal
+    +tamperingDetected: Boolean
+    +ocrStatus: String
+    +analysisDateTime: DateTime
+}
+
+class WorkflowTask {
+    +taskId: UUID
+    +taskType: String
+    +assignedRole: String
+    +assignedUser: String
+    +status: String
+    +dueDate: DateTime
+}
+
+class StatusHistory {
+    +historyId: UUID
+    +oldStatus: String
+    +newStatus: String
+    +changedBy: String
+    +changedDateTime: DateTime
+}
+
+class TimelineEvent {
+    +eventId: UUID
+    +eventType: String
+    +sourceSystem: String
+    +description: String
+    +eventTime: DateTime
+}
+
+class CaseProcessingCheckpoint {
+    +checkpointId: UUID
+    +agentType: String
+    +status: String
+    +completedDateTime: DateTime
+}
+
+class SecurityContext {
+    +ipAddress: String
+    +deviceId: String
+    +deviceFingerprint: String
+    +browser: String
+    +operatingSystem: String
+}
+
+class Authentication {
+    +threeDSAuthenticated: Boolean
+    +otpSent: Boolean
+    +otpValidated: Boolean
+}
+
+class Location {
+    +country: String
+    +city: String
 }
 
 class FinancialAdjustment {
-    adjustmentId: UUID
-    adjustmentType: String
-    amount: Decimal
-    currency: String
-    approvedBy: String
-    approvalStatus: String
+    +adjustmentId: UUID
+    +adjustmentType: String
+    +amount: Decimal
+    +currency: String
+    +approvalStatus: String
+    +postingStatus: String
+}
+
+class AgentExecution {
+    +executionId: UUID
+    +agentType: String
+    +status: String
+    +startTime: DateTime
+    +endTime: DateTime
+    +durationMs: Long
+    +retryCount: Integer
+    +errorMessage: String
 }
 
 class AgentAssessment {
-    assessmentId: UUID
-    agentType: String
-    confidence: Decimal
-    assessmentSummary: String
-    recommendation: String
-    ruleEngineVersion: String
-    reviewedAt: DateTime
+    +assessmentId: UUID
+    +agentType: String
+    +agentVersion: String
+    +executionStatus: String
+    +score: Integer
+    +confidence: Decimal
+    +finding: String
+    +recommendation: String
+    +reasoningJson: JSON
+    +createdDateTime: DateTime
 }
 
 class RuleEvaluation {
-    ruleId: UUID
-    ruleName: String
-    result: String
-    executionTimestamp: DateTime
-    details: String
+    +evaluationId: UUID
+    +ruleName: String
+    +ruleSource: String
+    +ruleVersion: String
+    +disputeCategory: String
+    +reasonCode: String
+    +eligibilityResult: String
+    +evaluationResult: String
+    +score: Decimal
 }
 
-class GovernanceDecision {
-    decisionId: UUID
-    governanceModel: String
-    disputeOutcome: String
-    escalationAction: String
-    validationPassFlag: Boolean
-    decisionDateTime: DateTime
+class RequiredEvidence {
+    +requiredEvidenceId: UUID
+    +reasonCode: String
+    +documentType: String
+    +mandatoryFlag: Boolean
 }
 
-class AIConsistencyValidation {
-    validationId: UUID
-    agentType: String
-    validationRule: String
-    confidence: Decimal
-    responseDifference: String
+class EvidenceVerification {
+    +verificationId: UUID
+    +sourceSystem: String
+    +verificationType: String
+    +result: String
+    +verificationTime: DateTime
 }
 
-class ExternalDocumentation {
-    documentId: UUID
-    reportName: String
-    reportType: String
-    requestedDateTime: DateTime
-    responseDateTime: DateTime
+class FraudAssessment {
+    +fraudAssessmentId: UUID
+    +fraudScore: Integer
+    +riskLevel: String
+    +fraudRemarks: String
+    +assessmentDateTime: DateTime
 }
 
-' Case Relationships
+class ConsensusDecision {
+    +decisionId: UUID
+    +recommendedAction: String
+    +reasonCode: String
+    +confidence: Integer
+    +fraudScore: Integer
+    +evidenceCompleteness: Integer
+    +arbitrationProbability: Integer
+    +decisionReason: String
+    +decisionDateTime: DateTime
+}
+
+class AIConversation {
+    +conversationId: UUID
+    +agentType: String
+    +promptHash: String
+    +responseHash: String
+    +modelVersion: String
+    +timestamp: DateTime
+}
+
+class ExternalSystemInteraction {
+    +interactionId: UUID
+    +systemName: String
+    +requestType: String
+    +responseStatus: String
+    +requestTime: DateTime
+    +responseTime: DateTime
+}
+
+' Case top-level relationships
 Case "1" *-- "1" Customer
-Case "1" *-- "0..*" Transaction
-Case "1" *-- "0..*" Dispute
-Case "1" *-- "0..*" WorkflowTask
-Case "1" *-- "0..*" StatusHistory
-Case "1" *-- "0..*" TimelineEvent
-Case "1" *-- "0..*" SecurityContext
-Case "1" *-- "0..*" Evidence
-Case "1" *-- "0..*" FinancialAdjustment
-Case "1" *-- "0..*" AgentAssessment
-Case "1" *-- "0..*" RuleEvaluation
-Case "1" *-- "0..*" GovernanceDecision
-Case "1" *-- "0..*" AIConsistencyValidation
-Case "1" *-- "0..*" ExternalDocumentation
+Case "1" *-- "1" Transaction
+Case "1" *-- "1" Dispute
+Case "1" *-- "1" Evidence
+Case "1" *-- WorkflowTask
+Case "1" *-- StatusHistory
+Case "1" *-- TimelineEvent
+Case "1" *-- CaseProcessingCheckpoint
+Case "1" *-- SecurityContext
+Case "1" *-- FinancialAdjustment
+Case "1" *-- AgentExecution
+Case "1" *-- RuleEvaluation
+Case "1" *-- EvidenceVerification
+Case "1" *-- "0..1" FraudAssessment
+Case "1" *-- ConsensusDecision
+Case "1" *-- AIConversation
+Case "1" *-- ExternalSystemInteraction
 
-' Child / Nested Relationships
-Customer "1" *-- "0..*" Address
-Customer "1" *-- "0..*" Card
-
+' Sub-entity relationships
+Customer "1" *-- "1" Address
+Customer "1" *-- "1" Card
 Transaction "1" *-- "1" Merchant
-Merchant "1" *-- "0..1" MerchantContact
-
-Dispute "1" *-- "0..*" DisputeStage
-
-SecurityContext "1" *-- "0..*" Authentication
-SecurityContext "1" *-- "0..*" Location
+Dispute "1" *-- "1" DisputeStage
+Evidence "1" *-- "0..1" DocumentAnalysis
+SecurityContext "1" *-- "1" Authentication
+SecurityContext "1" *-- "1" Location
+AgentExecution "1" *-- "0..*" AgentAssessment
+RuleEvaluation "1" *-- "1" RequiredEvidence
 
 @enduml

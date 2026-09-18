@@ -1,0 +1,145 @@
+@startuml
+title CaseflowAI - Dispute Processing Orchestration (Prototype)
+
+autonumber stop
+skinparam BoxPadding 10
+skinparam ParticipantPadding 10
+skinparam NoteBackgroundColor #FFF6A8
+skinparam NoteBorderColor #A88200
+
+box "Channels" #F5EEF0
+actor "Card Holder" as CardHolder
+participant "CDMS" as CDMS
+end box
+
+box "Engine" #EFF4FA
+participant "CaseController" as CaseController
+participant "DisputeProcessingService" as DisputeProcessingService
+participant "SupervisorAgent" as SupervisorAgent
+participant "DisputeIntakeAgent" as DisputeIntakeAgent
+participant "DisputeTriageAgent" as DisputeTriageAgent
+participant "EvidenceHunterAgent" as EvidenceHunterAgent
+participant "FraudInvestigationAgent" as FraudInvestigationAgent
+end box
+
+database "CaseDB" as CaseDB
+
+box "External Systems" #E8F5E9
+participant "Mastercard RAG" as MastercardRAG
+participant "PowerCARD" as PowerCARD
+participant "SICS" as SICS
+participant "Shipping Tracker" as ShippingTracker
+participant "Fraud Management" as FraudManagement
+end box
+
+== Case Creation (fast, synchronous) ==
+
+CardHolder -> CDMS: Submit Dispute
+CDMS -> CaseController: POST /engine/v1/case/create
+CaseController -> CaseDB: Save Case (status=PENDING)
+CaseDB --> CaseController: CaseId
+CaseController --> CDMS: 202 Accepted (caseId)
+
+note right of CaseController
+Agents are NOT run on the request
+thread - reasoning can take minutes.
+end note
+
+CaseController -> DisputeProcessingService: Process(caseId) <<async>>
+
+== Agent Orchestration ==
+
+DisputeProcessingService -> CaseDB: Update Case (status=PROCESSING)
+DisputeProcessingService -> SupervisorAgent: Start(caseId)
+
+par Phase 1 - Independent Agents [run in parallel]
+    group Intake Processing
+        SupervisorAgent -> DisputeIntakeAgent: Process(caseId)
+        DisputeIntakeAgent -> CaseDB: Get Case + Attachments(caseId)
+        CaseDB --> DisputeIntakeAgent: Case Data
+        DisputeIntakeAgent -> DisputeIntakeAgent: Validate Evidence\n(reasoning model)
+        note right of DisputeIntakeAgent
+        - Pixel-level tampering detection
+        - Field extraction
+        end note
+        DisputeIntakeAgent -> CaseDB: Save DocValidationScore\n+ ExtractedFields(JSON)
+        DisputeIntakeAgent --> SupervisorAgent: IntakeCompleted
+    end
+
+else Dispute Triage
+    SupervisorAgent -> DisputeTriageAgent: Process(caseId)
+    DisputeTriageAgent -> CaseDB: Get Case Details(caseId)
+    CaseDB --> DisputeTriageAgent: Transaction Data
+    DisputeTriageAgent -> MastercardRAG: Search Mastercard Rules
+    MastercardRAG --> DisputeTriageAgent: Applicable Rules
+    DisputeTriageAgent -> DisputeTriageAgent: Determine Dispute Category\n(reasoning model)
+    note right of DisputeTriageAgent
+    - Dispute Category + Code
+    - Eligibility
+    - Required Evidence
+    end note
+    DisputeTriageAgent -> CaseDB: Save Triage Result
+    DisputeTriageAgent --> SupervisorAgent: TriageCompleted(requiredEvidence)
+end
+
+par Phase 2 - Needs Triage Result [run in parallel]
+    group Evidence Gathering
+        SupervisorAgent -> EvidenceHunterAgent: Process(caseId, requiredEvidence)
+        EvidenceHunterAgent -> CaseDB: Get Case + Triage Result(caseId)
+        CaseDB --> EvidenceHunterAgent: Case Data + Required Evidence
+        
+        alt Acquiring Dispute
+            EvidenceHunterAgent -> PowerCARD: Get Transaction Details
+            PowerCARD --> EvidenceHunterAgent: Transaction Data
+        else Issuing Dispute
+            EvidenceHunterAgent -> SICS: Get Transaction Details
+            SICS --> EvidenceHunterAgent: Transaction Data
+        end
+        
+        opt Shipping Information Required
+            EvidenceHunterAgent -> ShippingTracker: Query Shipment
+            ShippingTracker --> EvidenceHunterAgent: Delivery Status
+        end
+        
+        EvidenceHunterAgent -> CaseDB: Save Evidence Details
+        EvidenceHunterAgent --> SupervisorAgent: EvidenceCompleted
+    end
+
+else Fraud Investigation
+    SupervisorAgent -> FraudInvestigationAgent: Process(caseId)
+    FraudInvestigationAgent -> CaseDB: Get Transaction Details(caseId)
+    CaseDB --> FraudInvestigationAgent: Transaction Data
+    FraudInvestigationAgent -> FraudManagement: Fraud Assessment
+    FraudManagement --> FraudInvestigationAgent: FraudScore + FraudRemarks
+    FraudInvestigationAgent -> CaseDB: Save Fraud Findings
+    FraudInvestigationAgent --> SupervisorAgent: FraudCompleted
+end
+
+== Consolidation ==
+
+alt All agents completed
+    SupervisorAgent -> CaseDB: Retrieve Agent Results
+    CaseDB --> SupervisorAgent: Intake + Triage + Evidence + Fraud Results
+    SupervisorAgent -> SupervisorAgent: Build consolidated\ndispute assessment
+    SupervisorAgent -> CaseDB: Save Investigation Summary
+    SupervisorAgent -> CaseDB: Update Case (status=ASSESSED)
+    SupervisorAgent --> DisputeProcessingService: ProcessingCompleted
+
+else Any agent failed or timed out
+    SupervisorAgent -> CaseDB: Update Case (status=FAILED)
+    SupervisorAgent --> DisputeProcessingService: ProcessingFailed(reason)
+    
+    note over SupervisorAgent, CaseDB
+    Prototype: no checkpoint, no resume.
+    Re-running the case starts the whole
+    orchestration from the beginning.
+    end note
+end
+
+CDMS -> CaseController: GET /engine/v1/case/{caseId}
+CaseController -> DisputeProcessingService: Get Case Status + Summary
+DisputeProcessingService --> CaseController: Status = Assessment
+CaseController --> CDMS: Case Result
+CDMS -> CardHolder: Outcome notification
+
+@enduml

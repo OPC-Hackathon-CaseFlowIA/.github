@@ -1,0 +1,222 @@
+@startuml
+title Enterprise Agentic AI Dispute Management - Canonical Data Model
+
+skinparam class {
+    BackgroundColor #FFFDF0
+    BorderColor #A86438
+    ArrowColor #A86438
+}
+
+class Case {
+    caseId: UUID
+    caseReference: String
+    disputeType: String
+    intakeChannel: String
+    disputeAmount: Decimal
+    currency: String
+    status: String
+    createdAt: DateTime
+    updatedAt: DateTime
+    closedDateTime: DateTime
+}
+
+class Customer {
+    customerId: UUID
+    externalId: String
+    customerType: String
+    fullName: String
+    email: String
+    phone: String
+    riskScore: Integer
+}
+
+class Address {
+    addressId: UUID
+    line1: String
+    city: String
+    postalCode: String
+    country: String
+}
+
+class Card {
+    cardId: UUID
+    maskedPan: String
+    cardType: String
+    issuerBank: String
+    expiryDate: String
+}
+
+class Transaction {
+    transactionId: UUID
+    externalId: String
+    transactionDate: DateTime
+    postedDate: DateTime
+    transactionAmount: Decimal
+    currency: String
+    mcc: String
+    authorizationCode: String
+    isCardPresent: Boolean
+    recurringFlag: Boolean
+}
+
+class Merchant {
+    merchantId: String
+    merchantName: String
+    merchantCountry: String
+    merchantCategoryCode: String
+}
+
+class MerchantContact {
+    merchantId: UUID
+    disputeDeskContact: String
+    contactPhoneNumber: String
+    merchantCategory: String
+}
+
+class Dispute {
+    disputeId: UUID
+    reasonCode: String
+    disputeStage: String
+    chargebackReasonCode: String
+    filedDateTime: DateTime
+}
+
+class DisputeStage {
+    stageId: UUID
+    stageName: String
+    enteredDateTime: DateTime
+    resolvedDateTime: DateTime
+}
+
+class WorkflowTask {
+    taskId: UUID
+    taskType: String
+    status: String
+    assignedAgentId: String
+    startedAt: DateTime
+    completedAt: DateTime
+}
+
+class StatusHistory {
+    historyId: UUID
+    oldStatus: String
+    newStatus: String
+    changedBy: String
+    changedDateTime: DateTime
+}
+
+class TimelineEvent {
+    eventId: UUID
+    eventType: String
+    eventDetail: String
+    eventDateTime: DateTime
+}
+
+class SecurityContext {
+    securityContextId: UUID
+    ipAddress: String
+    deviceId: String
+    vpnFlag: Boolean
+    riskScore: Integer
+}
+
+class Authentication {
+    authId: UUID
+    threeDSecureVersion: String
+    authStatus: String
+}
+
+class Location {
+    city: String
+    country: String
+}
+
+class Evidence {
+    evidenceId: UUID
+    documentType: String
+    fileLocation: String
+    uploadedBy: String
+    uploadedDateTime: DateTime
+}
+
+class FinancialAdjustment {
+    adjustmentId: UUID
+    adjustmentType: String
+    amount: Decimal
+    currency: String
+    approvedBy: String
+    approvalStatus: String
+}
+
+class AgentAssessment {
+    assessmentId: UUID
+    agentType: String
+    confidence: Decimal
+    assessmentSummary: String
+    recommendation: String
+    ruleEngineVersion: String
+    reviewedAt: DateTime
+}
+
+class RuleEvaluation {
+    ruleId: UUID
+    ruleName: String
+    result: String
+    executionTimestamp: DateTime
+    details: String
+}
+
+class GovernanceDecision {
+    decisionId: UUID
+    governanceModel: String
+    disputeOutcome: String
+    escalationAction: String
+    validationPassFlag: Boolean
+    decisionDateTime: DateTime
+}
+
+class AIConsistencyValidation {
+    validationId: UUID
+    agentType: String
+    validationRule: String
+    confidence: Decimal
+    responseDifference: String
+}
+
+class ExternalDocumentation {
+    documentId: UUID
+    reportName: String
+    reportType: String
+    requestedDateTime: DateTime
+    responseDateTime: DateTime
+}
+
+' Case Relationships
+Case "1" *-- "1" Customer
+Case "1" *-- "0..*" Transaction
+Case "1" *-- "0..*" Dispute
+Case "1" *-- "0..*" WorkflowTask
+Case "1" *-- "0..*" StatusHistory
+Case "1" *-- "0..*" TimelineEvent
+Case "1" *-- "0..*" SecurityContext
+Case "1" *-- "0..*" Evidence
+Case "1" *-- "0..*" FinancialAdjustment
+Case "1" *-- "0..*" AgentAssessment
+Case "1" *-- "0..*" RuleEvaluation
+Case "1" *-- "0..*" GovernanceDecision
+Case "1" *-- "0..*" AIConsistencyValidation
+Case "1" *-- "0..*" ExternalDocumentation
+
+' Child / Nested Relationships
+Customer "1" *-- "0..*" Address
+Customer "1" *-- "0..*" Card
+
+Transaction "1" *-- "1" Merchant
+Merchant "1" *-- "0..1" MerchantContact
+
+Dispute "1" *-- "0..*" DisputeStage
+
+SecurityContext "1" *-- "0..*" Authentication
+SecurityContext "1" *-- "0..*" Location
+
+@enduml
